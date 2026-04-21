@@ -1,5 +1,6 @@
 require('dotenv').config()
 const pool = require('./db')
+const authMiddleware = require('./middleware')
 
 const express =require('express')
 const app =express()
@@ -9,6 +10,10 @@ app.use(express.json())
 
 app.get('/health', (req,res)=>{
     res.json({status:'ok'})
+})
+
+app.get('/protected',authMiddleware, (req,res)=>{
+    res.json({message: 'You are authenticated', user: req.user})
 })
 
 
