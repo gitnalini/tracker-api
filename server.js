@@ -4,7 +4,7 @@ const pool = require('./db')
 const express =require('express')
 const app =express()
 const bcrypt = require('bcrypt')
-
+const jwt =require('jsonwebtoken')
 app.use(express.json())
 
 app.get('/health', (req,res)=>{
@@ -32,7 +32,8 @@ app.post('/login', async(req,res)=>{
     }else{
         const isPasswordCorrect=await bcrypt.compare(password, user.password)
         if(isPasswordCorrect){
-            res.json({message:'Login successful'})
+            const token =jwt.sign({userId: user.id}, process.env.JWT_SECRET,)
+            res.json({message:'Login successful',token})
         }else{
             res.status(400).json({message:'Invalid credentials'})
         }
