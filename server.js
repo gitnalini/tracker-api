@@ -12,6 +12,12 @@ const registerSchema=z.object({
     password: z.string().min(6)
 
 })
+
+const jobSchema=z.object({
+    company: z.string(),
+    role: z.string(),
+    status: z.enum(['applied', 'interview', 'offer', 'rejected'])
+})
 app.use(express.json())
 
 app.get('/health', (req,res)=>{
@@ -59,6 +65,11 @@ app.post('/login', async(req,res)=>{
 })
 
 app.post('/jobs',authMiddleware, async(req,res)=>{
+    const validation=jobSchema.safeParse(req.body)
+    if(!validation.success){
+        return res.status(400).json({message: validation.error.issues[0].message})
+    }
+    
    const {company,role,status}=req.body
    const userId =req.user.userId
    await pool.query('INSERT INTO jobs(company, role, status, user_id) VALUES ($1, $2, $3, $4)', [company, role, status, userId])
