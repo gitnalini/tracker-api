@@ -1,11 +1,17 @@
 require('dotenv').config()
 const pool = require('./db')
 const authMiddleware = require('./middleware')
-
+const {z} =require('zod')
 const express =require('express')
 const app =express()
 const bcrypt = require('bcrypt')
 const jwt =require('jsonwebtoken')
+
+const registerSchema=z.object({
+    email: z.string().email(),
+    password: z.string().min(6)
+
+})
 app.use(express.json())
 
 app.get('/health', (req,res)=>{
@@ -18,6 +24,11 @@ app.get('/protected',authMiddleware, (req,res)=>{
 
 
 app.post('/register',async (req,res)=>{
+
+    const validation=registerSchema.safeParse(req.body)
+    if(!validation.success){ 
+        return res.status(400).json({message: validation.error.issues[0].message})
+    }   
     // res.json(req.body.email)
     // res.json(req.body.passwor
     //  d)
