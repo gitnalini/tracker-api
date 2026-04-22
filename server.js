@@ -60,6 +60,34 @@ app.get('/jobs', authMiddleware, async(req,res)=>{
     res.json(result.rows)
 })
 
+app.put('/jobs/:id', authMiddleware, async(req,res)=>{
+    const jobId=req.params.id
+    const status=req.body.status
+    const userId=req.user.userId
+    const result = await pool.query('SELECT * FROM jobs WHERE id = $1 AND user_id = $2', [jobId, userId])
+   if(result.rows.length===0){
+        return res.status(404).json({message: 'Job not found'})
+      }else{
+        await pool.query('update jobs set status=$1 where id=$2 and user_id=$3', [status, jobId, userId])
+        res.json({message: 'Job updated successfully'})
+      }
+   }
+)
+
+app.delete('/jobs/:id', authMiddleware, async(req,res)=>{
+
+const jobId=req.params.id
+const userId=req.user.userId
+const result = await pool.query('SELECT * FROM jobs WHERE id = $1 AND user_id = $2', [jobId, userId])
+if(result.rows.length===0){
+    return res.status(404).json({message: 'Job not found'})
+  }else{
+    await pool.query('delete from jobs where id=$1 and user_id=$2', [jobId, userId])
+    res.json({message: 'Job deleted successfully'})
+   }
+
+})
+
 app.listen (3000, ()=>{
     console.log("server is running on port 3000")
 })
