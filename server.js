@@ -25,13 +25,15 @@ app.get('/health', (req,res)=>{
 })
 
 app.get('/protected',authMiddleware, (req,res)=>{
+
     res.json({message: 'You are authenticated', user: req.user})
 })
 
-
+ 
 app.post('/register',async (req,res)=>{
 
-    const validation=registerSchema.safeParse(req.body)
+    try{
+        const validation=registerSchema.safeParse(req.body)
     if(!validation.success){ 
         return res.status(400).json({message: validation.error.issues[0].message})
     }   
@@ -42,14 +44,21 @@ app.post('/register',async (req,res)=>{
     const hashedPassword = await bcrypt.hash(password, 10)
     await pool.query('INSERT INTO users (email, password) VALUES ($1, $2)', [email, hashedPassword])
     res.json({email: req.body.email, password: req.body.hashedPassword, message:'User registered successfully'})
-    
+    } catch (error){
+        console.error(error)
+        res.status(500).json({message: 'Internal server error'})
+    }
 })
 
 
 app.post('/login', async(req,res)=>{
+
+
+    try{
     const {email, password}=req.body
     const result=await pool.query('SELECT * FROM users Where email =$1', [email])
     const user=result.rows[0]
+
 
     if(user==null){
         return res.status(400).json({message:'Invalid credentials'})
@@ -61,28 +70,46 @@ app.post('/login', async(req,res)=>{
         }else{
             res.status(400).json({message:'Invalid credentials'})
         }
-    }
+    }}
+catch (error){
+    console.error(error)
+    res.status(500).json({message: 'Internal server error'})    
+
+}
 })
 
 app.post('/jobs',authMiddleware, async(req,res)=>{
     const validation=jobSchema.safeParse(req.body)
+    try{
     if(!validation.success){
         return res.status(400).json({message: validation.error.issues[0].message})
     }
-    
+
    const {company,role,status}=req.body
    const userId =req.user.userId
    await pool.query('INSERT INTO jobs(company, role, status, user_id) VALUES ($1, $2, $3, $4)', [company, role, status, userId])
-   res.json({message: 'Job added successfully'})
+   res.json({message: 'Job added successfully'})}
+    catch (error){
+        console.error(error)
+        res.status(500).json({message: 'Internal server error'})
+    }
 })
 
 app.get('/jobs', authMiddleware, async(req,res)=>{
+    try{
+
+    
     const userId =req.user.userId
     const result =await pool.query('select * from jobs where user_id= $1', [userId])
-    res.json(result.rows)
+    res.json(result.rows)}
+    catch (error){
+        console.error(error)
+        res.status(500).json({message: 'Internal server error'})
+    }
 })
 
 app.put('/jobs/:id', authMiddleware, async(req,res)=>{
+    try{
     const jobId=req.params.id
     const status=req.body.status
     const userId=req.user.userId
@@ -93,10 +120,15 @@ app.put('/jobs/:id', authMiddleware, async(req,res)=>{
         await pool.query('update jobs set status=$1 where id=$2 and user_id=$3', [status, jobId, userId])
         res.json({message: 'Job updated successfully'})
       }
-   }
+   } catch (error){
+    console.error(error)
+    res.status(500).json({message: 'Internal server error'})
+   }}
 )
 
 app.delete('/jobs/:id', authMiddleware, async(req,res)=>{
+try{
+
 
 const jobId=req.params.id
 const userId=req.user.userId
@@ -108,8 +140,18 @@ if(result.rows.length===0){
     res.json({message: 'Job deleted successfully'})
    }
 
+}
+catch (error){
+    console.error(error)
+    res.status(500).json({message: 'Internal server error'})
+}}
+)
+
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).json({ message: 'Something went wrong' })
 })
 
-app.listen (3000, ()=>{
+app.listen(3000, () => {
     console.log("server is running on port 3000")
 })
